@@ -34,7 +34,7 @@ RUN mkdir -p ~/.local/share/applications && \
 # Tạo file khởi động giám sát VNC + noVNC
 COPY supervisord.conf /etc/supervisord.conf
 
-# Mở cổng VNC + noVNC (5901 + 6080)
-EXPOSE 5901 6080
+# Mở cổng VNC + noVNC (5901 + 8080)
+EXPOSE 5901 8080
 
 CMD ["/usr/bin/supervisord", "-c", "/etc/supervisord.conf"]
