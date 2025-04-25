@@ -6,7 +6,7 @@ ENV HOME=/root
 ENV DISPLAY=:1
 
 # Cập nhật và cài các gói cần thiết
-RUN snap install firefox apt update && apt install -y \
+RUN apt update && apt install -y \
     xfce4 xfce4-goodies tightvncserver x11vnc \
     firefox xterm novnc websockify wget curl supervisor locales && \
     locale-gen en_US.UTF-8
