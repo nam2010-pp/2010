@@ -5,40 +5,30 @@ ENV USER=root
 ENV HOME=/root
 ENV DISPLAY=:1
 
-# Cập nhật và cài đặt gói cần thiết
+# Cài hệ thống GUI, VNC, noVNC và các công cụ cần thiết
 RUN apt update && apt install -y \
     xfce4 xfce4-goodies tightvncserver x11vnc \
-    xterm novnc websockify wget curl gnupg2 supervisor locales firefox && \
+    xterm novnc websockify wget curl gnupg2 lsb-release supervisor locales \
+    xorg openbox x11-xserver-utils && \
     locale-gen en_US.UTF-8
 
-# Tạo file Xresources cho xrdb
-RUN touch /root/.Xresources
+# Cài Firefox bản .deb từ Mozilla (tránh dùng snap và tar.bz2)
+RUN curl -fsSL https://packages.mozilla.org/apt/repo-signing-key.gpg | gpg --dearmor -o /usr/share/keyrings/mozilla.gpg && \
+    echo "deb [signed-by=/usr/share/keyrings/mozilla.gpg] https://packages.mozilla.org/apt mozilla main" > /etc/apt/sources.list.d/mozilla.list && \
+    apt update && apt install -y firefox
 
-# Cấu hình VNC và khởi động Firefox trong XFCE
+# Tạo file .desktop cho Firefox (cho biểu tượng)
+RUN mkdir -p /root/.local/share/applications && \
+    echo '[Desktop Entry]\nVersion=1.0\nName=Firefox\nGenericName=Web Browser\nExec=firefox %u\nIcon=firefox\nTerminal=false\nType=Application\nCategories=Network;WebBrowser;' > /root/.local/share/applications/firefox.desktop
+
+# Tạo thư mục VNC và cấu hình startup
 RUN mkdir -p /root/.vnc && \
     echo "123456" | vncpasswd -f > /root/.vnc/passwd && \
     chmod 600 /root/.vnc/passwd && \
-    echo '#!/bin/bash\nxrdb $HOME/.Xresources\nstartxfce4 &\nsleep 5 && firefox &' > /root/.vnc/xstartup && \
+    echo '#!/bin/bash\nstartxfce4 &\nsleep 5 && firefox &' > /root/.vnc/xstartup && \
     chmod +x /root/.vnc/xstartup
 
-# Sửa lỗi Firefox không lên khi click icon
-RUN mkdir -p /root/.local/share/applications && \
-    cat > /root/.local/share/applications/firefox.desktop <<EOF
-[Desktop Entry]
-Version=1.0
-Name=Firefox
-GenericName=Web Browser
-Exec=env DISPLAY=:1 firefox %u
-Icon=firefox
-Terminal=false
-Type=Application
-Categories=Network;WebBrowser;
-EOF
-
-# Gắn DISPLAY vào bashrc để các tiến trình phụ nhận diện
-RUN echo 'export DISPLAY=:1' >> /root/.bashrc
-
-# Copy file cấu hình supervisor
+# Cấu hình supervisor để quản lý các service
 COPY supervisord.conf /etc/supervisor/conf.d/supervisord.conf
 
 EXPOSE 8080
