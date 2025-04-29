@@ -5,7 +5,7 @@ ENV USER=root
 ENV HOME=/root
 ENV DISPLAY=:1
 
-# Cập nhật và cài gói cần thiết
+# Cập nhật và cài đặt gói cần thiết
 RUN apt update && apt install -y \
     xfce4 xfce4-goodies tightvncserver x11vnc \
     xterm novnc websockify wget curl gnupg2 supervisor locales firefox && \
@@ -14,32 +14,33 @@ RUN apt update && apt install -y \
 # Tạo file Xresources cho xrdb
 RUN touch /root/.Xresources
 
-# Tạo thư mục cấu hình VNC và script khởi động XFCE + Firefox
+# Cấu hình VNC và khởi động Firefox trong XFCE
 RUN mkdir -p /root/.vnc && \
     echo "123456" | vncpasswd -f > /root/.vnc/passwd && \
     chmod 600 /root/.vnc/passwd && \
     echo '#!/bin/bash\nxrdb $HOME/.Xresources\nstartxfce4 &\nsleep 5 && firefox &' > /root/.vnc/xstartup && \
     chmod +x /root/.vnc/xstartup
 
-# Tạo shortcut Firefox trong menu XFCE
+# Sửa lỗi Firefox không lên khi click icon
 RUN mkdir -p /root/.local/share/applications && \
     cat > /root/.local/share/applications/firefox.desktop <<EOF
 [Desktop Entry]
 Version=1.0
 Name=Firefox
 GenericName=Web Browser
-Exec=firefox %u
+Exec=env DISPLAY=:1 firefox %u
 Icon=firefox
 Terminal=false
 Type=Application
 Categories=Network;WebBrowser;
 EOF
 
-# Copy cấu hình supervisor để quản lý các tiến trình
+# Gắn DISPLAY vào bashrc để các tiến trình phụ nhận diện
+RUN echo 'export DISPLAY=:1' >> /root/.bashrc
+
+# Copy file cấu hình supervisor
 COPY supervisord.conf /etc/supervisor/conf.d/supervisord.conf
 
-# Mở port 8080 để truy cập qua noVNC
 EXPOSE 8080
 
-# Chạy tất cả tiến trình
 CMD ["/usr/bin/supervisord", "-n"]
