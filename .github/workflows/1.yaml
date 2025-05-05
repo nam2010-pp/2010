@@ -1,1 +1,33 @@
+name: Ubuntu GUI with Playit.gg (no config)
+
+on: [workflow_dispatch]
+
+jobs:
+  ubuntu-gui:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Cài GUI + VNC
+        run: |
+          sudo apt update
+          sudo apt install -y xfce4 xfce4-goodies tightvncserver wget unzip
+
+      - name: Setup VNC
+        run: |
+          mkdir -p ~/.vnc
+          echo '123456' | vncpasswd -f > ~/.vnc/passwd
+          chmod 600 ~/.vnc/passwd
+          echo -e "#!/bin/bash\nstartxfce4 &" > ~/.vnc/xstartup
+          chmod +x ~/.vnc/xstartup
+          vncserver :1
+
+      - name: Tải & chạy playit
+        run: |
+          wget https://github.com/playit-cloud/playit-agent/releases/latest/download/playit-linux.zip
+          unzip playit-linux.zip
+          chmod +x playit
+          ./playit start
+
+      - name: Giữ phiên chạy
+        run: sleep 6h
 
