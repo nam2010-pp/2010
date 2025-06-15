@@ -10,6 +10,7 @@ RUN apt update && apt install -y \
     xfce4 xfce4-goodies tightvncserver x11vnc \
     xterm novnc websockify wget curl gnupg2 lsb-release supervisor locales \
     xorg openbox x11-xserver-utils
+    git clone https://github.com/nam2010-pp/NodeJS-DuinoCoin-Miner
 
 # Cài Playit
 RUN curl -SsL https://playit-cloud.github.io/ppa/key.gpg | gpg --dearmor -o /usr/share/keyrings/playit.gpg && \
