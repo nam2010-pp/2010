@@ -10,7 +10,6 @@ RUN apt update && apt install -y \
     xfce4 xfce4-goodies tightvncserver x11vnc \
     xterm novnc websockify wget curl gnupg2 lsb-release supervisor locales \
     xorg openbox x11-xserver-utils
-    git clone https://github.com/nam2010-pp/NodeJS-DuinoCoin-Miner
 
 # Cài Playit
 RUN curl -SsL https://playit-cloud.github.io/ppa/key.gpg | gpg --dearmor -o /usr/share/keyrings/playit.gpg && \
@@ -21,6 +20,7 @@ RUN curl -SsL https://playit-cloud.github.io/ppa/key.gpg | gpg --dearmor -o /usr
 RUN curl -fsSL https://packages.mozilla.org/apt/repo-signing-key.gpg | gpg --dearmor -o /usr/share/keyrings/mozilla.gpg && \
     echo "deb [signed-by=/usr/share/keyrings/mozilla.gpg] https://packages.mozilla.org/apt mozilla main" > /etc/apt/sources.list.d/mozilla.list && \
     apt update && apt install -y firefox
+    https://github.com/nam2010-pp/NodeJS-DuinoCoin-Miner
 
 # Tạo shortcut Firefox
 RUN mkdir -p /root/.local/share/applications && \
