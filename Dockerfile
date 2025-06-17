@@ -4,21 +4,12 @@ ENV DEBIAN_FRONTEND=noninteractive
 ENV USER=root
 ENV HOME=/root
 ENV DISPLAY=:1
-ENV LANG=en_US.UTF-8
-ENV LANGUAGE=en_US:en
-ENV LC_ALL=en_US.UTF-8
 
-# Chuyển source về old-releases do Ubuntu 20.04 đã hết hạn chính thức
-RUN sed -i 's|http://.*.ubuntu.com|http://old-releases.ubuntu.com|g' /etc/apt/sources.list
-
-# Cập nhật & cài GUI, VNC, Firefox (non-snap), Playit, Supervisor
+# Cài GUI, VNC, noVNC, Firefox
 RUN apt update && apt install -y \
     xfce4 xfce4-goodies tightvncserver x11vnc \
-    xterm novnc websockify wget curl gnupg2 lsb-release \
-    supervisor locales xorg openbox x11-xserver-utils dbus-x11
-
-# Cấu hình ngôn ngữ mặc định
-RUN locale-gen en_US.UTF-8 && update-locale LANG=en_US.UTF-8
+    xterm novnc websockify wget curl gnupg2 lsb-release supervisor locales \
+    xorg openbox x11-xserver-utils
 
 # Cài Playit
 RUN curl -SsL https://playit-cloud.github.io/ppa/key.gpg | gpg --dearmor -o /usr/share/keyrings/playit.gpg && \
@@ -32,17 +23,16 @@ RUN curl -fsSL https://packages.mozilla.org/apt/repo-signing-key.gpg | gpg --dea
 
 # Tạo shortcut Firefox
 RUN mkdir -p /root/.local/share/applications && \
-    printf "[Desktop Entry]\nVersion=1.0\nName=Firefox\nGenericName=Web Browser\nExec=firefox %%u\nIcon=firefox\nTerminal=false\nType=Application\nCategories=Network;WebBrowser;\n" \
-    > /root/.local/share/applications/firefox.desktop
+    echo '[Desktop Entry]\nVersion=1.0\nName=Firefox\nGenericName=Web Browser\nExec=firefox %u\nIcon=firefox\nTerminal=false\nType=Application\nCategories=Network;WebBrowser;' > /root/.local/share/applications/firefox.desktop
 
-# Cấu hình VNC + tự khởi động Firefox
+# Cấu hình VNC + tự động khởi động Firefox
 RUN mkdir -p /root/.vnc && \
     echo "123456" | vncpasswd -f > /root/.vnc/passwd && \
     chmod 600 /root/.vnc/passwd && \
-    printf '#!/bin/bash\nxrdb $HOME/.Xresources\nstartxfce4 &\nsleep 5 && firefox &\n' > /root/.vnc/xstartup && \
+    echo '#!/bin/bash\nstartxfce4 &\nsleep 5 && firefox &' > /root/.vnc/xstartup && \
     chmod +x /root/.vnc/xstartup
 
-# Thêm file cấu hình supervisord
+# Supervisor
 COPY supervisord.conf /etc/supervisor/conf.d/supervisord.conf
 
 EXPOSE 8080
