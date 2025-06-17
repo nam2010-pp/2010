@@ -11,16 +11,20 @@ jobs:
     - name: Pull Ubuntu 20.04 & tạo container
       run: |
         docker pull ubuntu:20.04
-        docker run -dit --name gui-container ubuntu:20.04 bash
+        docker run -dit --name gui-container -e DEBIAN_FRONTEND=noninteractive ubuntu:20.04 bash
 
-    - name: Cài GUI + Playit bên trong container
+    - name: Cài GUI + Playit bên trong container (kèm locale + timezone)
       run: |
         docker exec gui-container bash -c "
+          export DEBIAN_FRONTEND=noninteractive &&
           apt update &&
+          apt install -y tzdata locales &&
+          ln -fs /usr/share/zoneinfo/Asia/Ho_Chi_Minh /etc/localtime &&
+          dpkg-reconfigure -f noninteractive tzdata &&
+          locale-gen en_US.UTF-8 &&
+          update-locale LANG=en_US.UTF-8 &&
           apt install -y xfce4 xfce4-goodies tightvncserver x11vnc novnc websockify \
-                         curl gnupg2 xterm dbus-x11 locales lsb-release git
-
-          locale-gen en_US.UTF-8
+                         curl gnupg2 xterm dbus-x11 lsb-release git
 
           mkdir -p /root/.vnc &&
           echo '123456' | vncpasswd -f > /root/.vnc/passwd &&
