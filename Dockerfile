@@ -1,4 +1,4 @@
-FROM ubuntu@sha256:4b9ed5f93b634e8846635e340aec15b9bb4c55fd29ccfc7b6c2de2f31ef400c0
+FROM ubuntu:22.04.0
 
 ENV DEBIAN_FRONTEND=noninteractive
 ENV USER=root
