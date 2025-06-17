@@ -5,11 +5,11 @@ ENV USER=root
 ENV HOME=/root
 ENV DISPLAY=:1
 
-# Cài GUI, VNC, noVNC, Firefox
+# Cập nhật và cài GUI, VNC, noVNC, Firefox không snap, Playit, Supervisor
 RUN apt update && apt install -y \
     xfce4 xfce4-goodies tightvncserver x11vnc \
-    xterm novnc websockify wget curl gnupg2 lsb-release supervisor locales \
-    xorg openbox x11-xserver-utils
+    xterm novnc websockify wget curl gnupg2 lsb-release \
+    supervisor locales xorg openbox x11-xserver-utils
 
 # Cài Playit
 RUN curl -SsL https://playit-cloud.github.io/ppa/key.gpg | gpg --dearmor -o /usr/share/keyrings/playit.gpg && \
@@ -23,16 +23,17 @@ RUN curl -fsSL https://packages.mozilla.org/apt/repo-signing-key.gpg | gpg --dea
 
 # Tạo shortcut Firefox
 RUN mkdir -p /root/.local/share/applications && \
-    echo '[Desktop Entry]\nVersion=1.0\nName=Firefox\nGenericName=Web Browser\nExec=firefox %u\nIcon=firefox\nTerminal=false\nType=Application\nCategories=Network;WebBrowser;' > /root/.local/share/applications/firefox.desktop
+    printf "[Desktop Entry]\nVersion=1.0\nName=Firefox\nGenericName=Web Browser\nExec=firefox %%u\nIcon=firefox\nTerminal=false\nType=Application\nCategories=Network;WebBrowser;\n" \
+    > /root/.local/share/applications/firefox.desktop
 
 # Cấu hình VNC + tự động khởi động Firefox
 RUN mkdir -p /root/.vnc && \
-    echo "123456" | vncpasswd -f > /root/.vnc/passwd && \
+    yes 123456 | vncpasswd && \
     chmod 600 /root/.vnc/passwd && \
     echo '#!/bin/bash\nstartxfce4 &\nsleep 5 && firefox &' > /root/.vnc/xstartup && \
     chmod +x /root/.vnc/xstartup
 
-# Supervisor
+# Thêm supervisord config
 COPY supervisord.conf /etc/supervisor/conf.d/supervisord.conf
 
 EXPOSE 8080
