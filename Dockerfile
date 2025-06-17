@@ -1,4 +1,4 @@
-FROM ubuntu:22.04
+FROM ubuntu:22.04.0
 
 ENV DEBIAN_FRONTEND=noninteractive
 ENV USER=root
