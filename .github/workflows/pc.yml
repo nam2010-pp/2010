@@ -1,59 +1,60 @@
-name: Ubuntu 20.04 GUI noVNC + Playit
+name: Ubuntu GUI + noVNC + Playit
 
 on:
   workflow_dispatch:
 
 jobs:
-  run-gui:
+  run-ubuntu-gui:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Checkout
-      uses: actions/checkout@v3
-
-    - name: Pull Ubuntu 20.04 + cài GUI
+    - name: Cài XFCE GUI, VNC, noVNC, tiện ích
       run: |
-        docker run --privileged -d --name gui-container ubuntu:20.04 sleep infinity
+        sudo apt update && sudo apt install -y \
+          xfce4 xfce4-goodies x11vnc novnc websockify \
+          tightvncserver neofetch xterm curl gpg locales dbus-x11
 
-        docker exec gui-container bash -c "
-          apt update && apt install -y \
-            xfce4 xfce4-goodies x11vnc novnc websockify \
-            tightvncserver neofetch xterm curl gpg git supervisor xorg openbox
-        "
-
-    - name: Cài Playit trong container
+    - name: Cài Playit Agent
       run: |
-        docker exec gui-container bash -c '
-          curl -SsL https://playit-cloud.github.io/ppa/key.gpg | gpg --dearmor -o /usr/share/keyrings/playit.gpg &&
-          echo "deb [signed-by=/usr/share/keyrings/playit.gpg] https://playit-cloud.github.io/ppa/data ./" > /etc/apt/sources.list.d/playit-cloud.list &&
-          apt update && apt install -y playit
-        '
+        curl -SsL https://playit-cloud.github.io/ppa/key.gpg | gpg --dearmor | sudo tee /etc/apt/trusted.gpg.d/playit.gpg >/dev/null
+        echo "deb [signed-by=/etc/apt/trusted.gpg.d/playit.gpg] https://playit-cloud.github.io/ppa/data ./" | sudo tee /etc/apt/sources.list.d/playit-cloud.list
+        sudo apt update && sudo apt install -y playit
 
-    - name: Cấu hình VNC container
+    - name: Cấu hình locale và XFCE không hỏi vùng
       run: |
-        docker exec gui-container bash -c "
-          mkdir -p /root/.vnc &&
-          echo '123456' | vncpasswd -f > /root/.vnc/passwd &&
-          chmod 600 /root/.vnc/passwd &&
-          echo -e '#!/bin/bash\nstartxfce4 &' > /root/.vnc/xstartup &&
-          chmod +x /root/.vnc/xstartup
-        "
+        sudo locale-gen en_US.UTF-8
+        echo "export LANG=en_US.UTF-8" >> ~/.bashrc
+        echo "export LANGUAGE=en_US:en" >> ~/.bashrc
+        echo "export LC_ALL=en_US.UTF-8" >> ~/.bashrc
+        source ~/.bashrc
 
-    - name: Chạy GUI + VNC + noVNC + Playit
+    - name: Cấu hình VNC + XFCE không hỏi vùng
       run: |
-        docker exec -d gui-container bash -c "
-          export DISPLAY=:1 &&
-          vncserver :1 &&
-          sleep 3 &&
-          x11vnc -display :1 -nopw -forever -bg &&
-          websockify --web=/usr/share/novnc/ 8080 localhost:5901 &
-          playit start > /root/playit.log &
-        "
+        mkdir -p ~/.vnc
+        echo -e "123456\n123456\nn" | vncpasswd
+        cat > ~/.vnc/xstartup <<EOF
+#!/bin/bash
+xrdb $HOME/.Xresources
+startxfce4 &
+EOF
+        chmod +x ~/.vnc/xstartup
+        vncserver :1
+        vncserver -kill :1
 
-    - name: In link từ Playit
+    - name: Khởi động GUI + VNC + noVNC
       run: |
+        export DISPLAY=:1
+        vncserver :1
+        sleep 5
+        x11vnc -display :1 -nopw -forever -bg
+        websockify --web=/usr/share/novnc/ 8080 localhost:5901 &
+
+    - name: Chạy Playit tunnel
+      run: |
+        playit start > playit.log &
         sleep 10
-        docker exec gui-container bash -c "cat /root/playit.log | grep https || tail /root/playit.log"
+        echo "[+] Link từ Playit:"
+        grep https playit.log || tail playit.log
 
-    - name: Giữ Workflow sống
+    - name: Giữ cho workflow sống lâu
       run: sleep 1080000
