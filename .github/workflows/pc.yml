@@ -8,47 +8,49 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Checkout repo
-      uses: actions/checkout@v3
-
-    - name: Tải Docker image Ubuntu 20.04 có GUI
+    - name: Pull Ubuntu 20.04 & tạo container
       run: |
         docker pull ubuntu:20.04
-
-    - name: Tạo container + cài GUI + noVNC + Playit
-      run: |
         docker run -dit --name gui-container ubuntu:20.04 bash
 
+    - name: Cài GUI + Playit bên trong container
+      run: |
         docker exec gui-container bash -c "
-          export DEBIAN_FRONTEND=noninteractive &&
           apt update &&
-          apt install -y xfce4 xfce4-goodies tightvncserver x11vnc novnc websockify curl gnupg2 lsb-release xterm locales supervisor dbus-x11 firefox git
+          apt install -y xfce4 xfce4-goodies tightvncserver x11vnc novnc websockify \
+                         curl gnupg2 xterm dbus-x11 locales lsb-release git
 
-          # Set locale tránh hỏi bàn phím
           locale-gen en_US.UTF-8
-          export LANG=en_US.UTF-8
-          
-          # VNC setup
+
           mkdir -p /root/.vnc &&
           echo '123456' | vncpasswd -f > /root/.vnc/passwd &&
           chmod 600 /root/.vnc/passwd &&
-          echo '#!/bin/bash\nstartxfce4 &' > /root/.vnc/xstartup &&
+          echo -e '#!/bin/bash\nstartxfce4 &' > /root/.vnc/xstartup &&
           chmod +x /root/.vnc/xstartup
 
-          # noVNC
-          websockify --web=/usr/share/novnc/ 8080 localhost:5901 &
-
-          # Playit
           curl -SsL https://playit-cloud.github.io/ppa/key.gpg | gpg --dearmor -o /usr/share/keyrings/playit.gpg &&
           echo 'deb [signed-by=/usr/share/keyrings/playit.gpg] https://playit-cloud.github.io/ppa/data ./' > /etc/apt/sources.list.d/playit-cloud.list &&
-          apt update && apt install -y playit &&
-          playit start > /root/playit.log &
+          apt update && apt install -y playit
         "
 
-    - name: In link Playit tunnel
+    - name: Chạy GUI + VNC + noVNC + Playit
       run: |
-        sleep 10
-        docker exec gui-container grep https /root/playit.log || docker exec gui-container tail /root/playit.log
+        docker exec -d gui-container bash -c "
+          export DISPLAY=:1 &&
+          vncserver :1 &&
+          x11vnc -display :1 -nopw -forever -bg &&
+          websockify --web=/usr/share/novnc/ 8080 localhost:5901 &
+          playit start > /root/playit.log 2>&1 &
+        "
 
-    - name: Giữ workflow sống
+    - name: Đợi Playit tạo link
+      run: sleep 15
+
+    - name: In link từ Playit log
+      run: |
+        docker exec gui-container bash -c "
+          grep https /root/playit.log || tail /root/playit.log
+        "
+
+    - name: Giữ cho workflow sống
       run: sleep 1080000
